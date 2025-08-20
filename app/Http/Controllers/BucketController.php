@@ -1,0 +1,52 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Bucket;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class BucketController extends Controller
+{
+    public function index()
+    {
+        return Bucket::where('user_id', Auth::id())->get();
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255|unique:buckets,name,NULL,id,user_id,'.Auth::id(),
+        ]);
+
+        return Bucket::create([
+            'name' => $validated['name'],
+            'user_id' => Auth::id()
+        ]);
+    }
+
+    public function show(Bucket $bucket)
+    {
+        $this->authorize('view', $bucket);
+        return $bucket;
+    }
+
+    public function update(Request $request, Bucket $bucket)
+    {
+        $this->authorize('update', $bucket);
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255|unique:buckets,name,'.$bucket->id.',id,user_id,'.Auth::id(),
+        ]);
+
+        $bucket->update($validated);
+        return $bucket;
+    }
+
+    public function destroy(Bucket $bucket)
+    {
+        $this->authorize('delete', $bucket);
+        $bucket->delete();
+        return response()->noContent();
+    }
+}

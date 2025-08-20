@@ -60,6 +60,13 @@ return [
             'report' => false,
         ],
 
+        'objectstorage' => [
+            'driver' => 'local',
+            'root' => '/srv/objectstorage',
+            'throw' => false,
+            'report' => false,
+        ],
+
     ],
 
     /*

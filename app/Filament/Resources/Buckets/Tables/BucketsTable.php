@@ -15,9 +15,23 @@ class BucketsTable
         return $table
             ->columns([
                 TextColumn::make('name')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('description')
+                    ->limit(50)
+                    ->tooltip(function (TextColumn $column): ?string {
+                        $state = $column->getState();
+                        if (strlen($state) <= 50) {
+                            return null;
+                        }
+                        return $state;
+                    }),
+                TextColumn::make('size')
+                    ->formatStateUsing(fn (string $state): string => number_format($state) . ' bytes')
+                    ->sortable(),
                 TextColumn::make('user.name')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

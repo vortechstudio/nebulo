@@ -48,10 +48,9 @@ class ObjectStorageService
         if (!$this->disk->exists($bucketName)) {
             return false;
         }
-
         try {
-            $this->disk->deleteDirectory($bucketName);
-            return true;
+-            $this->disk->deleteDirectory($bucketName);
+            return (bool) $this->disk->deleteDirectory(trim($bucketName, '/'));
         } catch (\Throwable $e) {
             report($e);
             return false;

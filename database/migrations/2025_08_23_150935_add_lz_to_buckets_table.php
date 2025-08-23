@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('buckets', function (Blueprint $table) {
             $table->text('description')->nullable();
-            $table->integer('limit_size')->default(5);
+            $table->unsignedBigInteger('limit_size')->default(0)->comment('Max size in bytes; 0 = unlimited');
         });
     }
 

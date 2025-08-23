@@ -40,26 +40,34 @@ class ObjectsTable
                 TextColumn::make('mime_type')
                     ->label('Type')
                     ->badge()
-                    ->color(fn (string $state): string => match (explode('/', $state)[0]) {
-                        'image' => 'success',
-                        'video' => 'info',
-                        'audio' => 'warning',
-                        'text' => 'gray',
-                        'application' => 'primary',
-                        default => 'secondary',
+                    ->color(function ($state): string {
+                        $type = is_string($state) && $state !== '' ? explode('/', $state, 2)[0] : null;
+                        return match ($type) {
+                            'image'       => 'success',
+                            'video'       => 'info',
+                            'audio'       => 'warning',
+                            'text'        => 'gray',
+                            'application' => 'primary',
+                            default       => 'secondary',
+                        };
                     })
                     ->searchable(),
 
                 TextColumn::make('size')
                     ->label('Taille')
-                    ->formatStateUsing(function (string $state): string {
-                        $bytes = (int) $state;
-                        if ($bytes >= 1073741824) {
-                            return number_format($bytes / 1073741824, 2) . ' GB';
-                        } elseif ($bytes >= 1048576) {
-                            return number_format($bytes / 1048576, 2) . ' MB';
-                        } elseif ($bytes >= 1024) {
-                            return number_format($bytes / 1024, 2) . ' KB';
+                    ->formatStateUsing(function ($state): string {
+                        $bytes = (int) ($state ?? 0);
+                        $KB = 1024;
+                        $MB = 1024 * $KB;
+                        $GB = 1024 * $MB;
+                        if ($bytes >= $GB) {
+                            return number_format($bytes / $GB, 2) . ' GB';
+                        }
+                        if ($bytes >= $MB) {
+                            return number_format($bytes / $MB, 2) . ' MB';
+                        }
+                        if ($bytes >= $KB) {
+                            return number_format($bytes / $KB, 2) . ' KB';
                         }
                         return $bytes . ' B';
                     })
@@ -101,8 +109,9 @@ class ObjectsTable
                         'application' => 'Applications',
                     ])
                     ->query(function (Builder $query, array $data): Builder {
+                        $value = $data['value'] ?? null;
                         return $query->when(
-                            $data['value'],
+                            $value,
                             fn (Builder $query, $value): Builder => $query->where('mime_type', 'like', $value . '/%')
                         );
                     }),

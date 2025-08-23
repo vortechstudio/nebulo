@@ -7,6 +7,7 @@ use App\Models\Objects;
 use App\Services\ObjectStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class ObjectController extends Controller
@@ -30,25 +31,50 @@ class ObjectController extends Controller
 
         $request->validate([
             'file' => 'required|file',
-            'name' => 'nullable|string|max:255',
+            'name' => 'nullable|string|max:255|not_regex:/[\\\/]|\.\./',
         ]);
 
+        // Normaliser le nom de l'objet pour éviter les injections de chemin
         $file = $request->file('file');
-        $objectName = $request->input('name', $file->getClientOriginalName());
+        $rawName = $request->input('name', $file->getClientOriginalName());
+        $objectName = basename(str_replace('\\', '/', $rawName));
         $bucketName = $bucket->name;
+        $path = null;
 
-        $path = $this->objectStorageService->putObject($bucketName, $objectName, file_get_contents($file->getRealPath()));
+        try {
+            // Démarrer une transaction pour garantir l'atomicité
+            \Illuminate\Support\Facades\DB::beginTransaction();
+            
+            // Utiliser $file->get() au lieu de file_get_contents pour une meilleure sécurité
+            $path = $this->objectStorageService->putObject($bucketName, $objectName, $file->get());
 
-        $object = Objects::create([
-            'bucket_id' => $bucket->id,
-            'name' => $objectName,
-            'path' => $path,
-            'size' => $file->getSize(),
-            'mime_type' => $file->getMimeType(),
-            'metadata' => json_encode([]),
-        ]);
+            $object = Objects::create([
+                'bucket_id' => $bucket->id,
+                'name' => $objectName,
+                'path' => $path,
+                'size' => $file->getSize(),
+                'mime_type' => $file->getMimeType(),
+                'metadata' => json_encode([]),
+            ]);
 
-        return response()->json($object, 201);
+            \Illuminate\Support\Facades\DB::commit();
+            return response()->json($object, 201);
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            
+            // Tentative de nettoyage du fichier stocké en cas d'échec
+            if ($path) {
+                try {
+                    $this->objectStorageService->deleteObject($bucketName, $objectName);
+                } catch (\Exception $deleteException) {
+                    // Échec silencieux de la suppression (best-effort)
+                    // On pourrait logger cette erreur dans un système de production
+                }
+            }
+            
+            throw $e;
+        }
     }
 
     public function show(Bucket $bucket, Objects $object)

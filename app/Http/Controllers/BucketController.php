@@ -67,22 +67,37 @@ class BucketController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:buckets,name,'.$bucket->id.',id,user_id,'.Auth::id(),
-            'limit_size' => 'required|integer',
+            'limit_size' => 'sometimes|integer|min:0',
+            'description' => 'sometimes|string|max:1000',
         ]);
 
         return DB::transaction(function () use ($bucket, $validated) {
             $old = $bucket->name;
             $new = $validated['name'];
-            $renamed = $this->objectStorageService->renameBucket($old, $new);
-            if (!$renamed) {
-                abort(409, 'Échec du renommage du bucket côté stockage.');
+            // Only rename storage if the name actually changed
+            if ($old !== $new) {
+                $renamed = $this->objectStorageService->renameBucket($old, $new);
+                if (! $renamed) {
+                    abort(409, 'Échec du renommage du bucket côté stockage.');
+                }
             }
             try {
-                $bucket->update(['name' => $new]);
+                // Update all changed fields in one go
+                $bucket->update([
+                    'name' => $new,
+                    ...(array_key_exists('limit_size', $validated)
+                        ? ['limit_size' => $validated['limit_size']]
+                        : []),
+                    ...(array_key_exists('description', $validated)
+                        ? ['description' => $validated['description']]
+                        : []),
+                ]);
                 return $bucket;
             } catch (\Throwable $e) {
-                // tentative de rollback côté stockage
-                $this->objectStorageService->renameBucket($new, $old);
+                // Rollback the storage rename if applied
+                if ($old !== $new) {
+                    $this->objectStorageService->renameBucket($new, $old);
+                }
                 throw $e;
             }
         });

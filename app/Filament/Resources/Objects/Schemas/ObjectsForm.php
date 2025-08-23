@@ -2,8 +2,11 @@
 
 namespace App\Filament\Resources\Objects\Schemas;
 
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Hidden;
 use Filament\Schemas\Schema;
 
 class ObjectsForm
@@ -13,17 +16,63 @@ class ObjectsForm
         return $schema
             ->components([
                 TextInput::make('name')
-                    ->required(),
+                    ->label('Nom de l\'objet')
+                    ->required()
+                    ->maxLength(255)
+                    ->helperText('Nom unique pour identifier l\'objet'),
+
+                FileUpload::make('file')
+                    ->label('Fichier à télécharger')
+                    ->disk('objectstorage')
+                    ->directory(fn ($get) => $get('bucket.name') ?? 'temp')
+                    ->maxSize(1024 * 1024) // 1GB
+                    ->helperText('Sélectionnez le fichier à stocker dans le bucket')
+                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                        if ($state) {
+                            $set('mime_type', $state->getMimeType());
+                            $set('size', $state->getSize());
+                            if (!$get('name')) {
+                                $set('name', $state->getClientOriginalName());
+                            }
+                            $set('path', ($get('bucket_id') ?? 'temp') . '/' . $state->getClientOriginalName());
+                        }
+                    }),
+
                 TextInput::make('path')
-                    ->required(),
+                    ->label('Chemin de stockage')
+                    ->required()
+                    ->maxLength(500)
+                    ->helperText('Chemin relatif où l\'objet sera stocké'),
+
                 TextInput::make('mime_type')
-                    ->required(),
+                    ->label('Type MIME')
+                    ->required()
+                    ->maxLength(100)
+                    ->helperText('Type de contenu du fichier (ex: image/jpeg, text/plain)'),
+
                 TextInput::make('size')
-                    ->required(),
-                TextInput::make('metadata'),
+                    ->label('Taille')
+                    ->numeric()
+                    ->minValue(0)
+                    ->suffix('bytes')
+                    ->required()
+                    ->helperText('Taille du fichier en octets'),
+
+                Textarea::make('metadata')
+                    ->label('Métadonnées')
+                    ->rows(3)
+                    ->rule('json')
+                    ->maxLength(1000)
+                    ->helperText('Métadonnées JSON additionnelles pour l\'objet')
+                    ->placeholder('{"description": "Mon fichier", "tags": ["important"]}'),
+
                 Select::make('bucket_id')
+                    ->label('Bucket')
                     ->relationship('bucket', 'name')
-                    ->required(),
+                    ->required()
+                    ->searchable()
+                    ->preload()
+                    ->helperText('Sélectionnez le bucket de destination'),
             ]);
     }
 }

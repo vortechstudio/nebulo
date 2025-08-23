@@ -2,15 +2,59 @@
 
 namespace App\Services;
 
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Storage;
 
 class ObjectStorageService
 {
     protected $disk;
 
-    public function __construct()
+    public function __construct(?FilesystemAdapter $disk = null)
     {
-        $this->disk = Storage::disk('objectstorage');
+        $this->disk = $disk ?? Storage::disk('objectstorage');
+    }
+
+    public function createBucket(string $bucketName): bool
+    {
+        if ($this->disk->exists($bucketName)) {
+            return false;
+        }
+        try {
+            $this->disk->makeDirectory($bucketName);
+            return true;
+        } catch (\Throwable $e) {
+            report($e);
+            return false;
+        }
+    }
+
+    public function renameBucket(string $bucketName, string $newName): bool
+    {
+        // Ensure source exists and target does not, to avoid overwriting
+        if (!$this->disk->exists($bucketName) || $this->disk->exists($newName)) {
+            return false;
+        }
+        // Attempt to rename, reporting any I/O errors
+        try {
+            return $this->disk->move($bucketName, $newName);
+        } catch (\Throwable $e) {
+            report($e);
+            return false;
+        }
+    }
+
+    public function deleteBucket(string $bucketName): bool
+    {
+        if (!$this->disk->exists($bucketName)) {
+            return false;
+        }
+        try {
+-            $this->disk->deleteDirectory($bucketName);
+            return (bool) $this->disk->deleteDirectory(trim($bucketName, '/'));
+        } catch (\Throwable $e) {
+            report($e);
+            return false;
+        }
     }
 
     public function putObject(string $bucketName, string $objectName, $content, array $metadata = []): string

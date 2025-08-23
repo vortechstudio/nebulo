@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Buckets\Pages;
 
 use App\Filament\Resources\Buckets\BucketResource;
+use App\Models\Bucket;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
@@ -13,7 +14,8 @@ class ListBuckets extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            CreateAction::make(),
+            CreateAction::make()
+                ->authorize('create', Bucket::class),
         ];
     }
 }

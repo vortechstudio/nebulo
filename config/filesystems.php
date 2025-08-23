@@ -65,6 +65,7 @@ return [
             'root' => '/srv/objectstorage',
             'throw' => false,
             'report' => false,
+            'visibility' => 'public',
         ],
 
     ],

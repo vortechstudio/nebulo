@@ -15,9 +15,23 @@ class BucketsTable
         return $table
             ->columns([
                 TextColumn::make('name')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('description')
+                    ->limit(50)
+                    ->tooltip(function (TextColumn $column): ?string {
+                        $state = $column->getState();
+                        if (! is_string($state) || mb_strlen($state) <= 50) {
+                            return null;
+                        }
+                        return $state;
+                    }),
+                TextColumn::make('size')
+                    ->formatStateUsing(fn ($state): string => is_numeric($state) ? number_format((int) $state) . ' bytes' : '—')
+                    ->sortable(),
                 TextColumn::make('user.name')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -31,11 +45,13 @@ class BucketsTable
                 //
             ])
             ->recordActions([
-                EditAction::make(),
+                EditAction::make()
+                    ->authorize('update'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->authorize('delete'),
                 ]),
             ]);
     }

@@ -30,7 +30,7 @@ class BucketController extends Controller
         // authorizeResource automatically handles 'create' authorization
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:buckets,name,NULL,id,user_id,'.Auth::id(),
-            'limit_size' => 'required|integer',
+            'limit_size' => 'required|integer|min:0',
             'description' => 'nullable|string|max:1000',
         ]);
 
@@ -45,7 +45,7 @@ class BucketController extends Controller
                 return Bucket::create([
                     'name' => $validated['name'],
                     'limit_size' => $validated['limit_size'],
-                    'description' => $validated['description'],
+                    'description' => $validated['description'] ?? null,
                     'user_id' => Auth::id()
                 ]);
             } catch (\Exception $e) {

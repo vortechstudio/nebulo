@@ -31,6 +31,7 @@ class BucketController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:buckets,name,NULL,id,user_id,'.Auth::id(),
             'limit_size' => 'required|integer',
+            'description' => 'nullable|string|max:1000',
         ]);
 
         return DB::transaction(function () use ($validated) {
@@ -44,6 +45,7 @@ class BucketController extends Controller
                 return Bucket::create([
                     'name' => $validated['name'],
                     'limit_size' => $validated['limit_size'],
+                    'description' => $validated['description'],
                     'user_id' => Auth::id()
                 ]);
             } catch (\Exception $e) {

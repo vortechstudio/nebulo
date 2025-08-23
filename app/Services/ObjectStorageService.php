@@ -19,19 +19,28 @@ class ObjectStorageService
         if ($this->disk->exists($bucketName)) {
             return false;
         }
-
-        $this->disk->makeDirectory($bucketName);
-
-        return true;
+        try {
+            $this->disk->makeDirectory($bucketName);
+            return true;
+        } catch (\Throwable $e) {
+            report($e);
+            return false;
+        }
     }
 
     public function renameBucket(string $bucketName, string $newName): bool
     {
-        if (!$this->disk->exists($bucketName)) {
+        // Ensure source exists and target does not, to avoid overwriting
+        if (!$this->disk->exists($bucketName) || $this->disk->exists($newName)) {
             return false;
         }
-
-        return $this->disk->move($bucketName, $newName);
+        // Attempt to rename, reporting any I/O errors
+        try {
+            return $this->disk->move($bucketName, $newName);
+        } catch (\Throwable $e) {
+            report($e);
+            return false;
+        }
     }
 
     public function deleteBucket(string $bucketName): bool

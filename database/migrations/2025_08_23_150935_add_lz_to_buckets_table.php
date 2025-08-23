@@ -12,6 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('buckets', function (Blueprint $table) {
+            $table->text('description')->nullable();
             $table->integer('limit_size')->default(5);
         });
     }
@@ -23,6 +24,7 @@ return new class extends Migration
     {
         Schema::table('buckets', function (Blueprint $table) {
             $table->dropColumn('limit_size');
+            $table->dropColumn('description');
         });
     }
 };

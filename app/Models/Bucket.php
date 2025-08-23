@@ -14,6 +14,12 @@ class Bucket extends Model
     protected $fillable = [
         'name',
         'user_id',
+        'description',
+        'limit_size',
+    ];
+
+    protected $casts = [
+        'limit_size' => 'integer',
     ];
 
     public function user(): BelongsTo

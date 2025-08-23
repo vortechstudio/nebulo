@@ -13,6 +13,9 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 
 class BucketResource extends Resource
 {
@@ -46,5 +49,23 @@ class BucketResource extends Resource
             'create' => CreateBucket::route('/create'),
             'edit' => EditBucket::route('/{record}/edit'),
         ];
+    }
+
+    /**
+     * Apply policy scopes to filter records based on user permissions.
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $user = Auth::user();
+
+        if ($user) {
+            $policy = Gate::getPolicyFor(Bucket::class);
+            if ($policy && method_exists($policy, 'scopeViewAny')) {
+                $query = $policy->scopeViewAny($user, $query);
+            }
+        }
+
+        return $query;
     }
 }

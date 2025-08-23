@@ -15,15 +15,19 @@ class BucketController extends Controller
     public function __construct()
     {
         $this->objectStorageService = new ObjectStorageService();
+        // Add automatic resource authorization
+        $this->authorizeResource(Bucket::class, 'bucket');
     }
 
     public function index()
     {
-        return Bucket::where('user_id', Auth::id())->get();
+        // Remove manual filtering, let policy handle it via authorizeResource
+        return Bucket::all();
     }
 
     public function store(Request $request)
     {
+        // authorizeResource automatically handles 'create' authorization
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:buckets,name,NULL,id,user_id,'.Auth::id(),
             'limit_size' => 'required|integer',

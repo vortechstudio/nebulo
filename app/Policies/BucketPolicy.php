@@ -5,7 +5,7 @@ namespace App\Policies;
 use App\Models\Bucket;
 use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
-use Illuminate\Database\Query\Builder;
+use Illuminate\Database\Eloquent\Builder;
 
 class BucketPolicy
 {
@@ -72,7 +72,7 @@ class BucketPolicy
      */
     public function scopeViewAny(User $user, Builder $query): Builder
     {
-        return $query->where('user_id', $user->id);
+        return $query->whereBelongsTo($user);
     }
 
     /**
@@ -80,6 +80,6 @@ class BucketPolicy
      */
     public function scopeView(User $user, Builder $query): Builder
     {
-        return $query->where('user_id', $user->id);
+        return $query->whereBelongsTo($user);
     }
 }

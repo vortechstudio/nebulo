@@ -5,9 +5,17 @@ namespace App\Http\Controllers;
 use App\Models\Bucket;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Services\ObjectStorageService;
 
 class BucketController extends Controller
 {
+    protected $objectStorageService;
+
+    public function __construct()
+    {
+        $this->objectStorageService = new ObjectStorageService();
+    }
+
     public function index()
     {
         return Bucket::where('user_id', Auth::id())->get();
@@ -18,6 +26,8 @@ class BucketController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:buckets,name,NULL,id,user_id,'.Auth::id(),
         ]);
+
+        $this->objectStorageService->createBucket($validated['name']);
 
         return Bucket::create([
             'name' => $validated['name'],
@@ -39,6 +49,8 @@ class BucketController extends Controller
             'name' => 'required|string|max:255|unique:buckets,name,'.$bucket->id.',id,user_id,'.Auth::id(),
         ]);
 
+        $this->objectStorageService->renameBucket($bucket->name, $validated['name']);
+
         $bucket->update($validated);
         return $bucket;
     }
@@ -46,6 +58,9 @@ class BucketController extends Controller
     public function destroy(Bucket $bucket)
     {
         $this->authorize('delete', $bucket);
+
+        $this->objectStorageService->deleteBuckets($bucket->name);
+
         $bucket->delete();
         return response()->noContent();
     }

@@ -13,6 +13,37 @@ class ObjectStorageService
         $this->disk = Storage::disk('objectstorage');
     }
 
+    public function createBucket(string $bucketName): bool
+    {
+        if ($this->disk->exists($bucketName)) {
+            return false;
+        }
+
+        $this->disk->makeDirectory($bucketName);
+
+        return true;
+    }
+
+    public function renameBucket(string $bucketName, string $newName): bool
+    {
+        if (!$this->disk->exists($bucketName)) {
+            return false;
+        }
+
+        return $this->disk->move($bucketName, $newName);
+    }
+
+    public function deleteBuckets(string $bucketName): bool
+    {
+        if (!$this->disk->exists($bucketName)) {
+            return false;
+        }
+
+        $this->disk->deleteDirectory($bucketName);
+
+        return true;
+    }
+
     public function putObject(string $bucketName, string $objectName, $content, array $metadata = []): string
     {
         // Logic to store the object

@@ -109,7 +109,10 @@ class ObjectsTable
 
                 Filter::make('large_files')
                     ->label('Fichiers volumineux (> 10MB)')
-                    ->query(fn (Builder $query): Builder => $query->where('size', '>', 10485760)),
+                    ->query(function (Builder $query) {
+                        $TEN_MB = 10 * 1024 * 1024;
+                        return $query->where('size', '>', $TEN_MB);
+                    }),
 
                 Filter::make('recent')
                     ->label('Récents (7 derniers jours)')
@@ -117,9 +120,12 @@ class ObjectsTable
             ])
             ->recordActions([
                 ViewAction::make()
-                    ->label('Voir'),
+                    ->label('Voir')
+                    ->authorize('view'),
+
                 EditAction::make()
-                    ->label('Modifier'),
+                    ->label('Modifier')
+                    ->authorize('update'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

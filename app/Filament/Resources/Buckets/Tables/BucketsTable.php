@@ -27,7 +27,7 @@ class BucketsTable
                         return $state;
                     }),
                 TextColumn::make('size')
-                    ->formatStateUsing(fn (string $state): string => number_format($state) . ' bytes')
+                    ->formatStateUsing(fn ($state): string => is_numeric($state) ? number_format((int) $state) . ' bytes' : '—')
                     ->sortable(),
                 TextColumn::make('user.name')
                     ->searchable()

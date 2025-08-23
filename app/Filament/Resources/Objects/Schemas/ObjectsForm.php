@@ -25,7 +25,6 @@ class ObjectsForm
                     ->label('Fichier à télécharger')
                     ->disk('objectstorage')
                     ->directory(fn ($get) => $get('bucket.name') ?? 'temp')
-                    ->acceptedFileTypes(['*'])
                     ->maxSize(1024 * 1024) // 1GB
                     ->helperText('Sélectionnez le fichier à stocker dans le bucket')
                     ->afterStateUpdated(function ($state, callable $set) {
@@ -53,6 +52,7 @@ class ObjectsForm
                 TextInput::make('size')
                     ->label('Taille')
                     ->numeric()
+                    ->minValue(0)
                     ->suffix('bytes')
                     ->required()
                     ->helperText('Taille du fichier en octets'),

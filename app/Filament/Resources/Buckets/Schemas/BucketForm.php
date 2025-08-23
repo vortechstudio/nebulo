@@ -21,6 +21,8 @@ class BucketForm
                     ->rows(3),
                 TextInput::make('size')
                     ->numeric()
+                    ->minValue(0)
+                    ->rule('integer')
                     ->suffix('bytes')
                     ->helperText('Maximum storage size for this bucket'),
                 Select::make('user_id')

@@ -33,8 +33,8 @@ class ObjectsTable
                     ->searchable()
                     ->limit(40)
                     ->tooltip(function (TextColumn $column): ?string {
-                        $state = $column->getState();
-                        return strlen($state) > 40 ? $state : null;
+                        $state = (string) ($column->getState() ?? '');
+                        return mb_strlen($state) > 40 ? $state : null;
                     }),
 
                 TextColumn::make('mime_type')

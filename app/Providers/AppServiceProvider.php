@@ -38,7 +38,7 @@ class AppServiceProvider extends ServiceProvider
      *
      * @return void
      */
-    public function registerPolicies()
+    public function registerPolicies(): void
     {
         foreach ($this->policies as $model => $policy) {
             \Illuminate\Support\Facades\Gate::policy($model, $policy);

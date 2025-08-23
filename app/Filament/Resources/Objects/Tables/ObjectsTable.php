@@ -24,8 +24,8 @@ class ObjectsTable
                     ->sortable()
                     ->limit(30)
                     ->tooltip(function (TextColumn $column): ?string {
-                        $state = $column->getState();
-                        return strlen($state) > 30 ? $state : null;
+                        $state = (string) ($column->getState() ?? '');
+                        return mb_strlen($state) > 30 ? $state : null;
                     }),
 
                 TextColumn::make('path')

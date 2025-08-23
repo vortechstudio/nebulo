@@ -61,6 +61,7 @@ class ObjectsForm
                 Textarea::make('metadata')
                     ->label('Métadonnées')
                     ->rows(3)
+                    ->rule('json')
                     ->maxLength(1000)
                     ->helperText('Métadonnées JSON additionnelles pour l\'objet')
                     ->placeholder('{"description": "Mon fichier", "tags": ["important"]}'),

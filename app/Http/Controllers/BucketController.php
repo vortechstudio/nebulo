@@ -43,7 +43,7 @@ class BucketController extends Controller
                     'user_id' => Auth::id()
                 ]);
             } catch (\Exception $e) {
-                $this->objectStorageService->deleteBuckets($validated['name']);
+                $this->objectStorageService->deleteBucket($validated['name']);
                 throw $e;
             }
         });
@@ -64,18 +64,45 @@ class BucketController extends Controller
             'limit_size' => 'required|integer',
         ]);
 
-        $this->objectStorageService->renameBucket($bucket->name, $validated['name']);
-
-        $bucket->update($validated);
-        return $bucket;
+        return DB::transaction(function () use ($bucket, $validated) {
+            $old = $bucket->name;
+            $new = $validated['name'];
+            $renamed = $this->objectStorageService->renameBucket($old, $new);
+            if (!$renamed) {
+                abort(409, 'Échec du renommage du bucket côté stockage.');
+            }
+            try {
+                $bucket->update(['name' => $new]);
+                return $bucket;
+            } catch (\Throwable $e) {
+                // tentative de rollback côté stockage
+                $this->objectStorageService->renameBucket($new, $old);
+                throw $e;
+            }
+        });
     }
 
     public function destroy(Bucket $bucket)
     {
         $this->authorize('delete', $bucket);
 
-        $this->objectStorageService->deleteBuckets($bucket->name);
+        // Check if bucket has objects before attempting deletion
+        if ($bucket->objects()->exists()) {
+            return response()->json([
+                'message' => 'Cannot delete bucket that contains objects. Please delete all objects first.'
+            ], 409);
+        }
 
+        // Attempt to delete the bucket from storage
+        $storageDeleted = $this->objectStorageService->deleteBucket($bucket->name);
+
+        if (!$storageDeleted) {
+            return response()->json([
+                'message' => 'Failed to delete bucket from storage. Please try again later.'
+            ], 500);
+        }
+
+        // Only delete from database if storage deletion was successful
         $bucket->delete();
         return response()->noContent();
     }

@@ -86,16 +86,25 @@ class ObjectController extends Controller
             abort(404);
         }
 
-        // Extraire le bucketName et objectName à partir du path stocké
-        $pathParts = explode('/', $object->path);
-        $bucketName = $pathParts[0];
+        // Utiliser directement $bucket->name au lieu de parser $object->path
+        $bucketName = $bucket->name;
         $objectName = $object->name;
 
         $content = $this->objectStorageService->getObject($bucketName, $objectName);
-
-        return response($content)
-            ->header('Content-Type', $object->mime_type)
-            ->header('Content-Length', $object->size);
+        
+        // Retourner 404 si l'objet n'existe pas
+        if ($content === null) {
+            abort(404);
+        }
+        
+        // Pour les fichiers volumineux, utiliser une réponse en streaming
+        // pour éviter de charger tout le contenu en mémoire
+        return response()->streamDownload(function () use ($content) {
+            echo $content;
+        }, $objectName, [
+            'Content-Type' => $object->mime_type,
+            // La taille sera automatiquement calculée par le framework
+        ]);
     }
 
     public function destroy(Bucket $bucket, Objects $object)
@@ -107,9 +116,8 @@ class ObjectController extends Controller
             abort(404);
         }
 
-        // Extraire le bucketName à partir du path stocké
-        $pathParts = explode('/', $object->path);
-        $bucketName = $pathParts[0];
+        // Utiliser directement $bucket->name au lieu de parser $object->path
+        $bucketName = $bucket->name;
         $objectName = $object->name;
 
         $this->objectStorageService->deleteObject($bucketName, $objectName);

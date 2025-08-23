@@ -21,8 +21,8 @@ class BucketController extends Controller
 
     public function index()
     {
-        // Remove manual filtering, let policy handle it via authorizeResource
-        return Bucket::all();
+        // Filter by current user to align with policy and avoid exposing other users' buckets
+        return Bucket::where('user_id', Auth::id())->get();
     }
 
     public function store(Request $request)

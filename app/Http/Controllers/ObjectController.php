@@ -37,7 +37,7 @@ class ObjectController extends Controller
         $objectName = $request->input('name', $file->getClientOriginalName());
         $path = $bucket->name . '/' . $objectName;
 
-        $this->objectStorageService->putObject($path, file_get_contents($file->getRealPath()));
+        $this->objectStorageService->putObject($path, $objectName, file_get_contents($file->getRealPath()));
 
         $object = Objects::create([
             'bucket_id' => $bucket->id,
@@ -60,7 +60,7 @@ class ObjectController extends Controller
             abort(404);
         }
 
-        $content = $this->objectStorageService->getObject($object->path);
+        $content = $this->objectStorageService->getObject($object->path, $object->name);
 
         return response($content)
             ->header('Content-Type', $object->mime_type)
@@ -76,7 +76,7 @@ class ObjectController extends Controller
             abort(404);
         }
 
-        $this->objectStorageService->deleteObject($object->path);
+        $this->objectStorageService->deleteObject($object->path, $object->name);
         $object->delete();
 
         return response()->noContent();

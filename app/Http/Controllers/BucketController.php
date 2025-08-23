@@ -6,6 +6,7 @@ use App\Models\Bucket;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Services\ObjectStorageService;
+use Illuminate\Support\Facades\DB;
 
 class BucketController extends Controller
 {
@@ -25,14 +26,27 @@ class BucketController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:buckets,name,NULL,id,user_id,'.Auth::id(),
+            'limit_size' => 'required|integer',
         ]);
 
-        $this->objectStorageService->createBucket($validated['name']);
+        return DB::transaction(function () use ($validated) {
+            $created = $this->objectStorageService->createBucket($validated['name']);
 
-        return Bucket::create([
-            'name' => $validated['name'],
-            'user_id' => Auth::id()
-        ]);
+            if(!$created) {
+                abort(409, "Le Bucket existe déjà");
+            }
+
+            try {
+                return Bucket::create([
+                    'name' => $validated['name'],
+                    'limit_size' => $validated['limit_size'],
+                    'user_id' => Auth::id()
+                ]);
+            } catch (\Exception $e) {
+                $this->objectStorageService->deleteBuckets($validated['name']);
+                throw $e;
+            }
+        });
     }
 
     public function show(Bucket $bucket)
@@ -47,6 +61,7 @@ class BucketController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:buckets,name,'.$bucket->id.',id,user_id,'.Auth::id(),
+            'limit_size' => 'required|integer',
         ]);
 
         $this->objectStorageService->renameBucket($bucket->name, $validated['name']);

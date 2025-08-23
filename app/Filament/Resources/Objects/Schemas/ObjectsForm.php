@@ -27,13 +27,14 @@ class ObjectsForm
                     ->directory(fn ($get) => $get('bucket.name') ?? 'temp')
                     ->maxSize(1024 * 1024) // 1GB
                     ->helperText('Sélectionnez le fichier à stocker dans le bucket')
-                    ->afterStateUpdated(function ($state, callable $set) {
+                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
                         if ($state) {
                             $set('mime_type', $state->getMimeType());
                             $set('size', $state->getSize());
-                            if (!$set('name')) {
+                            if (!$get('name')) {
                                 $set('name', $state->getClientOriginalName());
                             }
+                            $set('path', ($get('bucket_id') ?? 'temp') . '/' . $state->getClientOriginalName());
                         }
                     }),
 

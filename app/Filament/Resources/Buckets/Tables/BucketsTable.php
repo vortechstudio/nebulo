@@ -21,7 +21,7 @@ class BucketsTable
                     ->limit(50)
                     ->tooltip(function (TextColumn $column): ?string {
                         $state = $column->getState();
-                        if (strlen($state) <= 50) {
+                        if (! is_string($state) || mb_strlen($state) <= 50) {
                             return null;
                         }
                         return $state;
